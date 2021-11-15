@@ -67,76 +67,76 @@ runcmd(struct cmd *cmd)
   if(cmd == 0)
     exit();
 
-  switch(cmd->type){
-  default:
+  switch(cmd->type){   //选择命令的类型
+  default:             //支支持EXEC等几种命令，执行到默认情况就是出错了
     panic("runcmd");
 
-  case EXEC:
-    ecmd = (struct execcmd*)cmd;
-    if(ecmd->argv[0] == 0)
-      exit();
-    exec(ecmd->argv[0], ecmd->argv);
-    printf(2, "exec %s failed\n", ecmd->argv[0]);
+  case EXEC:     //如果是EXEC命令
+    ecmd = (struct execcmd*)cmd;  //强制类型转换为execcmd
+    if(ecmd->argv[0] == 0)  //如果参数数组argv一个元素都没有
+      exit();               //退出
+    exec(ecmd->argv[0], ecmd->argv);  //调用exec函数执行这个命令
+    printf(2, "exec %s failed\n", ecmd->argv[0]); //正常情况不会返回
     break;
 
-  case REDIR:
-    rcmd = (struct redircmd*)cmd;
-    close(rcmd->fd);
-    if(open(rcmd->file, rcmd->mode) < 0){
+  case REDIR:    //如果是重定向命令
+    rcmd = (struct redircmd*)cmd;  //强制类型转换为重定向命令
+    close(rcmd->fd);   //关闭标准输入或者标准输出
+    if(open(rcmd->file, rcmd->mode) < 0){  //打开文件，描述符为0或1
       printf(2, "open %s failed\n", rcmd->file);
       exit();
     }
-    runcmd(rcmd->cmd);
+    runcmd(rcmd->cmd);  //递归调用runcmd执行命令
     break;
 
-  case LIST:
-    lcmd = (struct listcmd*)cmd;
-    if(fork1() == 0)
+  case LIST:    //如果是LIST命令 
+    lcmd = (struct listcmd*)cmd;  //强制类型转换为LIST命令
+    if(fork1() == 0)      //fork出一个子进程运行左边的命令
       runcmd(lcmd->left);
-    wait();
-    runcmd(lcmd->right);
+    wait();               //等待左边的程序运行结束
+    runcmd(lcmd->right);  //运行右边的命令
     break;
 
   case PIPE:
     pcmd = (struct pipecmd*)cmd;
     if(pipe(p) < 0)
       panic("pipe");
-    if(fork1() == 0){
-      close(1);
-      dup(p[1]);
-      close(p[0]);
-      close(p[1]);
-      runcmd(pcmd->left);
+    if(fork1() == 0){    //fork出一个子进程运行左边的命令
+      close(1);          //关闭标准输出
+      dup(p[1]);         //标准输出重定向到p[1]
+      close(p[0]);       //关闭p[1]
+      close(p[1]);       //关闭p[2]
+      runcmd(pcmd->left);  //执行左边的命令
     }
-    if(fork1() == 0){
-      close(0);
-      dup(p[0]);
-      close(p[0]);
-      close(p[1]);
-      runcmd(pcmd->right);
+    if(fork1() == 0){    //fork出一个子进程运行右边的命令
+      close(0);          //关闭标准输入
+      dup(p[0]);         //标准输入重定向到p[0]
+      close(p[0]);       //关闭p[0]
+      close(p[1]);       //关闭p[1]
+      runcmd(pcmd->right);   //运行右边的命令
     }
-    close(p[0]);
-    close(p[1]);
-    wait();
-    wait();
+    close(p[0]);    //关闭p[0]
+    close(p[1]);    //关闭p[1]
+    wait();      //等待子进程退出
+    wait();      //等待子进程退出
     break;
 
-  case BACK:
-    bcmd = (struct backcmd*)cmd;
-    if(fork1() == 0)
-      runcmd(bcmd->cmd);
+  case BACK:    //如果是BACK后台命令
+    bcmd = (struct backcmd*)cmd; //强制类型转换为BACK命令
+    if(fork1() == 0)      //fork出一个子进程运行命令
+      runcmd(bcmd->cmd);  //运行命令
     break;
   }
   exit();
 }
 
 int
-getcmd(char *buf, int nbuf)
+getcmd(char *buf, int nbuf)  //从键盘(控制台)缓冲区获取输入
 {
-  printf(2, "$ ");
-  memset(buf, 0, nbuf);
-  gets(buf, nbuf);
-  if(buf[0] == 0) // EOF
+  printf(2, "$ ");     //打印$符号
+  memset(buf, 0, nbuf);   //清空buf
+  gets(buf, nbuf);    //从键盘(控制台)缓冲区获取输入，存到buf
+  if(buf[0] == 0) // EOF  说明出现了截至符，也就是按下了ctrl+d
     return -1;
   return 0;
 }

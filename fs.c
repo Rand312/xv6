@@ -339,13 +339,13 @@ void iput(struct inode *ip)
   releasesleep(&ip->lock);
 
   acquire(&icache.lock);
-  ip->ref--;
+  ip->ref--;    //一般情况下引用数减一
   release(&icache.lock);
 }
 
 // Common idiom: unlock, then put.
 void
-iunlockput(struct inode *ip)
+iunlockput(struct inode *ip)  //解锁释放
 {
   iunlock(ip);
   iput(ip);
@@ -649,14 +649,14 @@ namex(char *path, int nameiparent, char *name)
 }
 
 struct inode*
-namei(char *path)
+namei(char *path)   //获取当前路径表示的文件inode
 {
   char name[DIRSIZ];
   return namex(path, 0, name);
 }
 
 struct inode*
-nameiparent(char *path, char *name)
+nameiparent(char *path, char *name)  //获取当前路径表示的文件的父目录inode
 {
   return namex(path, 1, name);
 }

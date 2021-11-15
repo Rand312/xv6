@@ -9,7 +9,7 @@ putc(int fd, char c)
 }
 
 static void
-printint(int fd, int xx, int base, int sgn)
+printint(int fd, int xx, int base, int sgn)   //将整数xx按照进制为base，符号为sgn打印出来
 {
   static char digits[] = "0123456789ABCDEF";
   char buf[16];

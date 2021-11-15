@@ -25,7 +25,7 @@ static struct {
 } cons;
 
 static void
-printint(int xx, int base, int sign)
+printint(int xx, int base, int sign)  //将整数xx按照进制为base，符号为sgn打印出来
 {
   static char digits[] = "0123456789abcdef";
   char buf[16];
@@ -51,8 +51,9 @@ printint(int xx, int base, int sign)
 //PAGEBREAK: 50
 
 // Print to the console. only understands %d, %x, %p, %s.
+//cprintf，过程基本同printf，只是cprintf是内核中使用，printf是用户使用，详见printf
 void
-cprintf(char *fmt, ...)
+cprintf(char *fmt, ...)   
 {
   int i, c, locking;
   uint *argp;
@@ -104,22 +105,22 @@ cprintf(char *fmt, ...)
 }
 
 void
-panic(char *s)
+panic(char *s)    //出现重大错误时 panic
 {
   int i;
   uint pcs[10];
 
-  cli();
-  cons.locking = 0;
+  cli();      //关中断
+  cons.locking = 0;   //解控制台的锁
   // use lapiccpunum so that we can call panic from mycpu()
-  cprintf("lapicid %d: panic: ", lapicid());
-  cprintf(s);
-  cprintf("\n");
-  getcallerpcs(&s, pcs);
+  cprintf("lapicid %d: panic: ", lapicid());  //打印CPUID消息
+  cprintf(s);     //打印自定义消息
+  cprintf("\n");  //换行
+  getcallerpcs(&s, pcs);  //获取调用栈帧信息
   for(i=0; i<10; i++)
-    cprintf(" %p", pcs[i]);
-  panicked = 1; // freeze other CPU
-  for(;;)
+    cprintf(" %p", pcs[i]);   //打印栈帧信息
+  panicked = 1; // freeze other CPU，因为其他CPU会检查全局变量panicked的值，如果为1，(for::);  
+  for(;;)    //freeze 当前CPU
     ;
 }
 

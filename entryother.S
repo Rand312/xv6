@@ -19,6 +19,8 @@
 #
 # This code combines elements of bootasm.S and entry.S.
 
+# entryother.S APs的引导程序，基本同BSP
+
 .code16           
 .globl start
 start:

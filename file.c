@@ -10,14 +10,14 @@
 #include "sleeplock.h"
 #include "file.h"
 
-struct devsw devsw[NDEV];
+struct devsw devsw[NDEV];   //设备读写函数指针数组
 struct {
   struct spinlock lock;
   struct file file[NFILE];
-} ftable;
+} ftable;   //文件表，100个槽，即最多打开100个文件
 
 void
-fileinit(void)
+fileinit(void)     //初始化文件表的锁
 {
   initlock(&ftable.lock, "ftable");
 }
@@ -41,70 +41,69 @@ struct file* filealloc(void)    //分配一个文件结构体
 
 // Increment ref count for file f.
 struct file*
-filedup(struct file *f)
+filedup(struct file *f)   //增加文件结构体的引用数
 {
-  acquire(&ftable.lock);
-  if(f->ref < 1)
+  acquire(&ftable.lock);  //取锁
+  if(f->ref < 1)    //如果引用数小于1，panic
     panic("filedup");
-  f->ref++;
-  release(&ftable.lock);
+  f->ref++;        //引用数++
+  release(&ftable.lock);   //解锁
   return f;
 }
 
 // Close file f.  (Decrement ref count, close when reaches 0.)
 void
-fileclose(struct file *f)
+fileclose(struct file *f)   //关闭文件
 {
   struct file ff;
 
   acquire(&ftable.lock);
-  if(f->ref < 1)
+  if(f->ref < 1)  
     panic("fileclose");
-  if(--f->ref > 0){
+  if(--f->ref > 0){     //引用数减1
     release(&ftable.lock);
     return;
   }
-  
+  //如果引用数减为0了，回收文件结构体
   ff = *f;
   f->ref = 0;
   f->type = FD_NONE;
   release(&ftable.lock);
-
-  if(ff.type == FD_PIPE)
+  
+  if(ff.type == FD_PIPE)   //如果该文件是个管道，调用pipeclose来关闭
     pipeclose(ff.pipe, ff.writable);
-  else if(ff.type == FD_INODE){
+  else if(ff.type == FD_INODE){  //如果类型为FD_INODE
     begin_op();
-    iput(ff.ip);
+    iput(ff.ip);  //释放该inode，iput里面检查该inode的链接数和引用数是否都为0，如果是则删除文件
     end_op();
   }
 }
 
 // Get metadata about file f.
 int
-filestat(struct file *f, struct stat *st)
+filestat(struct file *f, struct stat *st)  //获取inode信息，放进stat结构体
 {
-  if(f->type == FD_INODE){
-    ilock(f->ip);
-    stati(f->ip, st);
-    iunlock(f->ip);
+  if(f->type == FD_INODE){  //如果文件类型为“INODE”文件
+    ilock(f->ip);   //取锁
+    stati(f->ip, st);  //获取inode信息，放进stat结构体
+    iunlock(f->ip); //解锁
     return 0;
   }
   return -1;
 }
 
 // Read from file f.
-int
-fileread(struct file *f, char *addr, int n)
+int fileread(struct file *f, char *addr, int n)
 {
   int r;
 
-  if(f->readable == 0)
+  if(f->readable == 0)   //如果该文件不可读
     return -1;
-  if(f->type == FD_PIPE)
-    return piperead(f->pipe, addr, n);
-  if(f->type == FD_INODE){
+  if(f->type == FD_PIPE)  //如果该文件是管道
+    return piperead(f->pipe, addr, n);  //调用管道读的方法
+  if(f->type == FD_INODE){  //如果是inode类型的文件
     ilock(f->ip);
-    if((r = readi(f->ip, addr, f->off, n)) > 0)
+    if((r = readi(f->ip, addr, f->off, n)) > 0) //调用readi方法
       f->off += r;
     iunlock(f->ip);
     return r;
@@ -121,9 +120,9 @@ filewrite(struct file *f, char *addr, int n)
 
   if(f->writable == 0)
     return -1;
-  if(f->type == FD_PIPE)
-    return pipewrite(f->pipe, addr, n);
-  if(f->type == FD_INODE){
+  if(f->type == FD_PIPE)   //如果是管道文件
+    return pipewrite(f->pipe, addr, n);   //调用写管道的方法
+  if(f->type == FD_INODE){ //如果是INODE文件
     // write a few blocks at a time to avoid exceeding
     // the maximum log transaction size, including
     // i-node, indirect block, allocation blocks,

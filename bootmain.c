@@ -90,6 +90,6 @@ readseg(uchar* pa, uint count, uint offset)
   // If this is too slow, we could read lots of sectors at a time.
   // We'd write more to memory than asked, but it doesn't matter --
   // we load in increasing order.
-  for(; pa < epa; pa += SECTSIZE, offset++)
+  for(; pa < epa; pa += SECTSIZE, offset++)  //循环读取扇区到pa处
     readsect(pa, offset);   
 }

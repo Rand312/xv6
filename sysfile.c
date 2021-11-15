@@ -19,7 +19,7 @@
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
 static int
-argfd(int n, int *pfd, struct file **pf)
+argfd(int n, int *pfd, struct file **pf)  //获取用户态下传给内核的参数：文件描述符
 {
   int fd;
   struct file *f;
@@ -38,7 +38,7 @@ argfd(int n, int *pfd, struct file **pf)
 // Allocate a file descriptor for the given file.
 // Takes over file reference from caller on success.
 static int
-fdalloc(struct file *f)
+fdalloc(struct file *f)   //分配文件描述符
 {
   int fd;
   struct proc *curproc = myproc();   //当前进程控制块的地址
@@ -53,7 +53,7 @@ fdalloc(struct file *f)
 }
 
 int
-sys_dup(void)
+sys_dup(void)   //系统调用dup，就是分配一个文件描述符使其指向文件结构体f，然后f的引用数加1
 {
   struct file *f;
   int fd;
@@ -67,56 +67,56 @@ sys_dup(void)
 }
 
 int
-sys_read(void)
+sys_read(void)   //系统调用read
 {
   struct file *f;
   int n;
   char *p;
 
-  if(argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argptr(1, &p, n) < 0)
+  if(argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argptr(1, &p, n) < 0)  //获取参数
     return -1;
-  return fileread(f, p, n);
+  return fileread(f, p, n);  //调用fileread读取
 }
 
 int
-sys_write(void)
+sys_write(void)  //系统调用写
 {
   struct file *f;
   int n;
   char *p;
 
-  if(argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argptr(1, &p, n) < 0)
+  if(argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argptr(1, &p, n) < 0)  //获取参数
     return -1;
-  return filewrite(f, p, n);
+  return filewrite(f, p, n); //调用filewrite写
 }
 
 int
-sys_close(void)
+sys_close(void)  //系统调用close
 {
   int fd;
   struct file *f;
 
-  if(argfd(0, &fd, &f) < 0)
+  if(argfd(0, &fd, &f) < 0)  //获取参数
     return -1;
-  myproc()->ofile[fd] = 0;
-  fileclose(f);
+  myproc()->ofile[fd] = 0;  //将打开文件描述符表的fd项清0
+  fileclose(f);   //关闭相应的文件结构体
   return 0;
 }
 
 int
-sys_fstat(void)
+sys_fstat(void)    //系统调用 fstat，获取一些inode信息
 {
   struct file *f;
   struct stat *st;
 
-  if(argfd(0, 0, &f) < 0 || argptr(1, (void*)&st, sizeof(*st)) < 0)
+  if(argfd(0, 0, &f) < 0 || argptr(1, (void*)&st, sizeof(*st)) < 0) //获取参数
     return -1;
-  return filestat(f, st);
+  return filestat(f, st);  //调用filestat实现
 }
 
 // Create the path new as a link to the same inode as old.
 int
-sys_link(void)
+sys_link(void)  //系统调用link，创建硬链接
 {
   char name[DIRSIZ], *new, *old;
   struct inode *dp, *ip;
@@ -333,7 +333,7 @@ sys_open(void)
 }
 
 int
-sys_mkdir(void)
+sys_mkdir(void)  //创建目录
 {
   char *path;
   struct inode *ip;
@@ -349,7 +349,7 @@ sys_mkdir(void)
 }
 
 int
-sys_mknod(void)
+sys_mknod(void)  //创建设备文件
 {
   struct inode *ip;
   char *path;
@@ -369,7 +369,7 @@ sys_mknod(void)
 }
 
 int
-sys_chdir(void)
+sys_chdir(void)   //更改当前工作路径
 {
   char *path;
   struct inode *ip;
@@ -394,7 +394,7 @@ sys_chdir(void)
 }
 
 int
-sys_exec(void)
+sys_exec(void)  
 {
   char *path, *argv[MAXARG];
   int i;

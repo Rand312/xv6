@@ -21,32 +21,34 @@ extern void trapret(void);
 static void wakeup1(void *chan);
 
 void
-pinit(void)
+pinit(void)   //初始化进程表，就是初始化进程表的锁
 {
   initlock(&ptable.lock, "ptable");
 }
 
 // Must be called with interrupts disabled
 int
-cpuid() {
+cpuid() {     //返回CPU ID，与数组元素减去数组首地址得到索引一个道理
   return mycpu()-cpus;
 }
 
 // Must be called with interrupts disabled to avoid the caller being
 // rescheduled between reading lapicid and running through the loop.
 struct cpu*
-mycpu(void)
+mycpu(void)   //获取当前CPU
 {
   int apicid, i;
   
-  if(readeflags()&FL_IF)
+  if(readeflags()&FL_IF)   //检查是否处于关中断的状态
     panic("mycpu called with interrupts enabled\n");
   
-  apicid = lapicid();
+  apicid = lapicid();   //获取当前CPU的APIC ID，也就是CPU ID
   // APIC IDs are not guaranteed to be contiguous. Maybe we should have
   // a reverse map, or reserve a register to store &cpus[i].
+  //APIC ID不能够保证一定是连续的，但在这xv6中根据ioapicenable函数推测还有实际测试，
+  //APIC ID，CPU数据的索引(CPU ID) 是一样的
   for (i = 0; i < ncpu; ++i) {
-    if (cpus[i].apicid == apicid)
+    if (cpus[i].apicid == apicid)  //比对哪个CPU结构体的ID是上述ID，返回其地址
       return &cpus[i];
   }
   panic("unknown apicid\n");
@@ -54,14 +56,15 @@ mycpu(void)
 
 // Disable interrupts so that we are not rescheduled
 // while reading proc from the cpu structure
+//获取当前CPU上运行的进程
 struct proc*
 myproc(void) {
   struct cpu *c;
   struct proc *p;
-  pushcli();
-  c = mycpu();
-  p = c->proc;
-  popcli();
+  pushcli();    //关中断
+  c = mycpu();  //获取当前CPU
+  p = c->proc;  //运行在当前CPU上面的进程
+  popcli();     //popcli
   return p;
 }
 
@@ -110,8 +113,8 @@ found:
   //这一步模拟内核态上下文的内容，eip(返回地址) 填写为forkret函数地址
   sp -= sizeof *p->context;
   p->context = (struct context*)sp;
-  memset(p->context, 0, sizeof *p->context);
-  p->context->eip = (uint)forkret;
+  memset(p->context, 0, sizeof *p->context);   //切换级上下文置0
+  p->context->eip = (uint)forkret;    //切换级上下文的eip字段，相当于返回地址，上CPU时执行的第一个函数
 
   return p;
 }
@@ -362,14 +365,14 @@ scheduler(void)
 // break in the few places where a lock is held but
 // there's no process.
 void
-sched(void)
+sched(void)   //让出CPU，重新调度
 {
   int intena;
   struct proc *p = myproc();
 
-  if(!holding(&ptable.lock))
+  if(!holding(&ptable.lock))   
     panic("sched ptable.lock");
-  if(mycpu()->ncli != 1)
+  if(mycpu()->ncli != 1)       
     panic("sched locks");
   if(p->state == RUNNING)
     panic("sched running");
@@ -382,7 +385,7 @@ sched(void)
 
 // Give up the CPU for one scheduling round.
 void
-yield(void)
+yield(void)   //主动让出CPU
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
@@ -497,7 +500,7 @@ int kill(int pid)
 // Runs when user types ^P on console.
 // No lock to avoid wedging a stuck machine further.
 void
-procdump(void)
+procdump(void)  //获取每个进程的状态，栈帧情况
 {
   static char *states[] = {
   [UNUSED]    "unused",

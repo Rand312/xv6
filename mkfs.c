@@ -170,7 +170,7 @@ main(int argc, char *argv[])
 }
 
 void
-wsect(uint sec, void *buf)
+wsect(uint sec, void *buf)   //写“扇区”
 {
   if(lseek(fsfd, sec * BSIZE, 0) != sec * BSIZE){
     perror("lseek");
@@ -182,7 +182,7 @@ wsect(uint sec, void *buf)
   }
 }
 
-void winode(uint inum, struct dinode *ip)
+void winode(uint inum, struct dinode *ip)  //写“inode”
 {
   char buf[BSIZE];
   uint bn;
@@ -196,7 +196,7 @@ void winode(uint inum, struct dinode *ip)
 }
 
 void
-rinode(uint inum, struct dinode *ip)
+rinode(uint inum, struct dinode *ip)  //读“inode”
 {
   char buf[BSIZE];
   uint bn;
@@ -209,7 +209,7 @@ rinode(uint inum, struct dinode *ip)
 }
 
 void
-rsect(uint sec, void *buf)
+rsect(uint sec, void *buf)  //读“扇区”
 {
   if(lseek(fsfd, sec * BSIZE, 0) != sec * BSIZE){
     perror("lseek");
@@ -222,7 +222,7 @@ rsect(uint sec, void *buf)
 }
 
 uint
-ialloc(ushort type)
+ialloc(ushort type)   //分配“inode”
 {
   uint inum = freeinode++;   //分配inode编号
   struct dinode din;

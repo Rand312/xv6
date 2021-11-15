@@ -39,22 +39,22 @@ exec(char *path, char **argv)
     goto bad;
 
   // Load program into memory.
-  sz = 0;   //进程大小
+  sz = 0;   //进程大小初始为0
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
-    if(readi(ip, (char*)&ph, off, sizeof(ph)) != sizeof(ph))
-      goto bad;
-    if(ph.type != ELF_PROG_LOAD)
-      continue;
-    if(ph.memsz < ph.filesz)
-      goto bad;
-    if(ph.vaddr + ph.memsz < ph.vaddr)
-      goto bad;
-    if((sz = allocuvm(pgdir, sz, ph.vaddr + ph.memsz)) == 0)
-      goto bad;
-    if(ph.vaddr % PGSIZE != 0)
-      goto bad;
-    if(loaduvm(pgdir, (char*)ph.vaddr, ip, ph.off, ph.filesz) < 0)
-      goto bad;
+      if(readi(ip, (char*)&ph, off, sizeof(ph)) != sizeof(ph))  //读取程序头
+        goto bad;
+      if(ph.type != ELF_PROG_LOAD)  //如果是可装载段
+        continue;
+      if(ph.memsz < ph.filesz)  //memsz不应该小于filesz
+        goto bad;
+      if(ph.vaddr + ph.memsz < ph.vaddr)  //memsz也不应该是负数
+        goto bad;
+      if((sz = allocuvm(pgdir, sz, ph.vaddr + ph.memsz)) == 0)  //分配sz到ph.vaddr + ph.memsz之间的虚拟内存
+        goto bad;
+      if(ph.vaddr % PGSIZE != 0)  //地址应该是对齐的
+        goto bad;
+      if(loaduvm(pgdir, (char*)ph.vaddr, ip, ph.off, ph.filesz) < 0) //从磁盘搬运filesz字节的数据到vaddr
+        goto bad;
   }
   iunlockput(ip);
   end_op();
@@ -103,7 +103,7 @@ exec(char *path, char **argv)
   freevm(oldpgdir);   //释放旧的用户空间
   return 0;
 
- bad:
+ bad:    //如果出错，释放已分配的资源
   if(pgdir)
     freevm(pgdir);
   if(ip){

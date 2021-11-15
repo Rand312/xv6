@@ -43,7 +43,7 @@ int kbdgetc(void)
 }
 
 void
-kbdintr(void)
+kbdintr(void)    //键盘中断服务程序
 {
   consoleintr(kbdgetc);
 }
