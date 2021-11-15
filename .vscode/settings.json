@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "x86.h": "c",
-        "cmath": "c",
-        "*.tcc": "c",
-        "limits": "cpp",
-        "typeinfo": "c"
-    }
-}
